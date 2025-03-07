@@ -11,14 +11,24 @@ const userSchema = new Schema({
     required: true,
     unique: true,
   },
-  dateOfBirth: {
-    type: String,
-    required: true,
-  },
   password: {
     type: String,
     required: true,
   },
+  dob: {
+    type: Date,
+    required: true,
+  },
+  photo: {
+    type: String,
+    default: "",
+  },
+  previousOrders: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Order",
+    },
+  ],
 });
 
 const User = mongoose.model("User", userSchema);

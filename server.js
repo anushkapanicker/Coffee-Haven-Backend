@@ -1,6 +1,8 @@
 const express = require("express");
 const mongoose = require("./config/db");
 const userRoutes = require("./routes/userRoutes");
+const coffeeRoutes = require("./routes/coffeeRoutes");
+const orderRoutes = require("./routes/orderRoutes");
 const cors = require("cors");
 
 const app = express();
@@ -11,6 +13,8 @@ app.use(cors());
 
 // Routes
 app.use("/api", userRoutes);
+app.use("/api", coffeeRoutes);
+app.use("/api", orderRoutes);
 
 app.listen(3000, () => {
   console.log("Server is running on http://localhost:3000");
