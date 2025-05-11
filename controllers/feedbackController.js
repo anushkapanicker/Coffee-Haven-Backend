@@ -1,10 +1,9 @@
-// controllers/feedbackController.js
 const Feedback = require("../models/feedback");
 
 // Get all feedback entries
 exports.getAllFeedback = async (req, res) => {
   try {
-    const feedback = await Feedback.find().sort({ submittedAt: -1 });
+    const feedback = await Feedback.find().sort({ _id: -1 });
     res.json({ message: "Feedback retrieved successfully", data: feedback });
   } catch (err) {
     res
@@ -30,42 +29,28 @@ exports.getFeedbackById = async (req, res) => {
 
 // Submit new feedback
 exports.submitFeedback = async (req, res) => {
-  const {
-    overallRating,
-    name,
-    email,
-    recommendationSystemRating,
-    moodDetectionAccurate,
-    detailedFeedback,
-    featureSuggestions,
-  } = req.body;
+  const { name, email, experience, recommendation, feedback, improvements, rating } = req.body;
 
   // Validate required fields
-  if (
-    !overallRating ||
-    !name ||
-    !email ||
-    !recommendationSystemRating ||
-    moodDetectionAccurate === undefined
-  ) {
+  if (!name || !email || !experience || recommendation === undefined || !rating) {
     return res.status(400).json({ message: "Required fields missing" });
   }
 
-  const feedback = new Feedback({
-    overallRating,
+  const newFeedback = new Feedback({
     name,
     email,
-    recommendationSystemRating,
-    moodDetectionAccurate,
-    detailedFeedback: detailedFeedback || "",
-    featureSuggestions: featureSuggestions || "",
+    experience,
+    recommendation,
+    feedback: feedback || "",
+    improvements: improvements || "",
+    rating,
   });
 
   try {
-    const newFeedback = await feedback.save();
+    const savedFeedback = await newFeedback.save();
     res
       .status(201)
-      .json({ message: "Feedback submitted successfully", data: newFeedback });
+      .json({ message: "Feedback submitted successfully", data: savedFeedback });
   } catch (err) {
     res
       .status(400)
@@ -76,32 +61,20 @@ exports.submitFeedback = async (req, res) => {
 // Update feedback
 exports.updateFeedback = async (req, res) => {
   try {
-    const feedback = await Feedback.findById(req.params.id);
-    if (!feedback) {
+    const feedbackData = await Feedback.findById(req.params.id);
+    if (!feedbackData) {
       return res.status(404).json({ message: "Feedback not found" });
     }
 
-    const {
-      overallRating,
-      name,
-      email,
-      recommendationSystemRating,
-      moodDetectionAccurate,
-      detailedFeedback,
-      featureSuggestions,
-    } = req.body;
+    const { name, email, experience, recommendation, feedback, improvements, rating } = req.body;
 
-    if (overallRating !== undefined) feedback.overallRating = overallRating;
     if (name) feedback.name = name;
     if (email) feedback.email = email;
-    if (recommendationSystemRating)
-      feedback.recommendationSystemRating = recommendationSystemRating;
-    if (moodDetectionAccurate !== undefined)
-      feedback.moodDetectionAccurate = moodDetectionAccurate;
-    if (detailedFeedback !== undefined)
-      feedback.detailedFeedback = detailedFeedback;
-    if (featureSuggestions !== undefined)
-      feedback.featureSuggestions = featureSuggestions;
+    if (experience) feedback.experience = experience;
+    if (recommendation !== undefined) feedback.recommendation = recommendation;
+    if (feedback!== undefined) feedback.feedback = feedback;
+    if (improvements !== undefined) feedback.improvements = improvements;
+    if (rating !== undefined) feedback.rating = rating;
 
     const updatedFeedback = await feedback.save();
     res.json({

@@ -30,7 +30,7 @@ exports.getCoffeeById = async (req, res) => {
 
 // Create new coffee
 exports.createCoffee = async (req, res) => {
-  const { name, price, description, photo } = req.body;
+  const { name, price, description, moods, zodiacSigns, image } = req.body;
 
   if (!name || !price || !description) {
     return res.status(400).json({ message: "Required fields missing" });
@@ -40,7 +40,9 @@ exports.createCoffee = async (req, res) => {
     name,
     price,
     description,
-    photo,
+    moods,
+    zodiacSigns,
+    image
   });
 
   try {
@@ -63,12 +65,14 @@ exports.updateCoffee = async (req, res) => {
       return res.status(404).json({ message: "Coffee not found" });
     }
 
-    const { name, price, description, photo } = req.body;
+    const { name, price, description, moods, zodiacSigns, image } = req.body;
 
     if (name) coffee.name = name;
     if (price) coffee.price = price;
     if (description) coffee.description = description;
-    if (photo !== undefined) coffee.photo = photo;
+    if (moods !== undefined) coffee.moods = moods;
+    if (zodiacSigns !== undefined) coffee.zodiacSigns = zodiacSigns;
+    if (image) coffee.image = image;
 
     const updatedCoffee = await coffee.save();
     res.json({ message: "Coffee updated successfully", data: updatedCoffee });

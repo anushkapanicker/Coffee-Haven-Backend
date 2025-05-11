@@ -15,9 +15,17 @@ const coffeeSchema = new Schema({
     type: String,
     required: true,
   },
-  photo: {
+  moods: {
+    type: [String],
+    default: [],
+  },
+  zodiacSigns: {
+    type: [String],
+    default: [],
+  },
+  image: {
     type: String,
-    default: "",
+    required: true,
   },
 });
 

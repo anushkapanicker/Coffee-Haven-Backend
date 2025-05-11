@@ -5,7 +5,9 @@ const User = require("../models/user");
 // Get all orders
 exports.getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find().populate("coffee_id").populate("user_id");
+    const orders = await Order.find()
+      .populate("items.coffee_id")
+      .populate("user_id");
     res.json({ message: "Orders retrieved successfully", data: orders });
   } catch (err) {
     res
@@ -18,7 +20,7 @@ exports.getAllOrders = async (req, res) => {
 exports.getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
-      .populate("coffee_id")
+      .populate("items.coffee_id")
       .populate("user_id");
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -33,17 +35,30 @@ exports.getOrderById = async (req, res) => {
 
 // Create new order
 exports.createOrder = async (req, res) => {
-  const { coffee_id, user_id, qty, address } = req.body;
+  const { items, user_id } = req.body;
 
-  if (!coffee_id || !user_id || !qty || !address) {
-    return res.status(400).json({ message: "Required fields missing" });
+  if (!items || !Array.isArray(items) || items.length === 0 || !user_id) {
+    return res.status(400).json({ message: "Required fields missing or invalid" });
   }
 
   try {
-    // Get coffee to calculate price
-    const coffee = await Coffee.findById(coffee_id);
-    if (!coffee) {
-      return res.status(404).json({ message: "Coffee not found" });
+    let totalPrice = 0;
+
+    // Validate items and calculate total price
+    for (const item of items) {
+      const { coffee_id, qty } = item;
+
+      if (!coffee_id || !qty || qty < 1) {
+        return res.status(400).json({ message: "Invalid item details" });
+      }
+
+      const coffee = await Coffee.findById(coffee_id);
+      if (!coffee) {
+        return res.status(404).json({ message: `Coffee with ID ${coffee_id} not found` });
+      }
+
+      item.unitPrice = coffee.price;
+      totalPrice += coffee.price * qty;
     }
 
     // Check if user exists
@@ -52,16 +67,10 @@ exports.createOrder = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const unitPrice = coffee.price;
-    const totalPrice = unitPrice * qty;
-
     const order = new Order({
-      coffee_id,
+      items,
       user_id,
-      qty,
-      unitPrice,
       totalPrice,
-      address,
     });
 
     const newOrder = await order.save();
@@ -89,20 +98,34 @@ exports.updateOrder = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    const { coffee_id, user_id, qty, address } = req.body;
+    const { items, user_id } = req.body;
 
-    if (coffee_id) order.coffee_id = coffee_id;
-    if (user_id) order.user_id = user_id;
-    if (address) order.address = address;
+    if (items && Array.isArray(items)) {
+      let totalPrice = 0;
 
-    if (qty) {
-      order.qty = qty;
-      // Recalculate total price if quantity changes
-      const coffee = await Coffee.findById(order.coffee_id);
-      if (coffee) {
-        order.unitPrice = coffee.price;
-        order.totalPrice = coffee.price * qty;
+      // Validate items and calculate total price
+      for (const item of items) {
+        const { coffee_id, qty } = item;
+
+        if (!coffee_id || !qty || qty < 1) {
+          return res.status(400).json({ message: "Invalid item details" });
+        }
+
+        const coffee = await Coffee.findById(coffee_id);
+        if (!coffee) {
+          return res.status(404).json({ message: `Coffee with ID ${coffee_id} not found` });
+        }
+
+        item.unitPrice = coffee.price;
+        totalPrice += coffee.price * qty;
       }
+
+      order.items = items;
+      order.totalPrice = totalPrice;
+    }
+
+    if (user_id) {
+      order.user_id = user_id;
     }
 
     const updatedOrder = await order.save();

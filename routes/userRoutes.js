@@ -9,10 +9,10 @@ router.get("/users", userController.getAllUsers);
 router.get("/users/:id", userController.getUserById);
 
 // User registration
-router.post("/users/register", userController.createUser);
+router.post("/auth/register", userController.createUser);
 
 // User login
-router.post("/users/login", userController.loginUser);
+router.post("/auth/login", userController.loginUser);
 
 // Update user
 router.patch("/users/:id", userController.updateUser);

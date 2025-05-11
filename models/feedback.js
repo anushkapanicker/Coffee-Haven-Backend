@@ -3,12 +3,6 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const feedbackSchema = new Schema({
-  overallRating: {
-    type: Number,
-    required: true,
-    min: 1,
-    max: 5,
-  },
   name: {
     type: String,
     required: true,
@@ -17,27 +11,28 @@ const feedbackSchema = new Schema({
     type: String,
     required: true,
   },
-  recommendationSystemRating: {
+  experience: {
     type: String,
     required: true,
-    enum: ["Excellent", "Good", "Fair", "Poor"],
   },
-  moodDetectionAccurate: {
+  recommendation: {
     type: Boolean,
     required: true,
   },
-  detailedFeedback: {
+  feedback: {
     type: String,
     default: "",
   },
-  featureSuggestions: {
+  improvements: {
     type: String,
     default: "",
   },
-  submittedAt: {
-    type: Date,
-    default: Date.now,
-  },
+  rating: {
+    type: Number,
+    required: true,
+    min: 1,
+    max: 5,
+  }
 });
 
 const Feedback = mongoose.model("Feedback", feedbackSchema);

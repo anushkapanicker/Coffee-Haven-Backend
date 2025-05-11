@@ -1,4 +1,3 @@
-// controllers/userController.js
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -6,7 +5,9 @@ const jwt = require("jsonwebtoken");
 // Get all users
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().populate("previousOrders");
+    const users = await User.find()
+      .select("-password") // Exclude password field
+      .populate("previousOrders");
     res.json({ message: "Users retrieved successfully", data: users });
   } catch (err) {
     res
@@ -18,7 +19,9 @@ exports.getAllUsers = async (req, res) => {
 // Get user by ID
 exports.getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).populate("previousOrders");
+    const user = await User.findById(req.params.id)
+      .select("-password") // Exclude password field
+      .populate("previousOrders");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -32,9 +35,9 @@ exports.getUserById = async (req, res) => {
 
 // Create new user (Register)
 exports.createUser = async (req, res) => {
-  const { name, email, dob, password, photo } = req.body;
+  const { fullName, email, dateOfBirth, password, mood } = req.body;
 
-  if (!name || !email || !dob || !password) {
+  if (!fullName || !email || !dateOfBirth || !password) {
     return res.status(400).json({ message: "Required fields are missing" });
   }
 
@@ -45,15 +48,12 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ message: "Email already in use" });
     }
 
-    // Hash the password
-    // const hashedPassword = await bcrypt.hash(password, 10);
-
     const user = new User({
-      name,
+      fullName,
       email,
-      dob,
-      password: password, // Store hashed password
-      photo: photo || "",
+      dateOfBirth,
+      password,
+      mood: mood || "",
       previousOrders: [],
     });
 
@@ -71,9 +71,9 @@ exports.createUser = async (req, res) => {
       data: {
         user: {
           _id: newUser._id,
-          name: newUser.name,
+          fullName: newUser.fullName,
           email: newUser.email,
-          photo: newUser.photo,
+          mood: newUser.mood,
         },
         token,
       },
@@ -101,8 +101,8 @@ exports.loginUser = async (req, res) => {
     }
 
     // Compare passwords
-    // const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (password != user.password) {
+    const isPasswordValid = password === user.password;
+    if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -119,9 +119,9 @@ exports.loginUser = async (req, res) => {
       data: {
         user: {
           _id: user._id,
-          name: user.name,
+          fullName: user.fullName,
           email: user.email,
-          photo: user.photo,
+          mood: user.mood,
         },
         token,
       },
@@ -139,25 +139,25 @@ exports.updateUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const { name, email, dob, password, photo } = req.body;
+    const { fullName, email, dateOfBirth, password, mood } = req.body;
 
-    if (name) user.name = name;
+    if (fullName) user.fullName = fullName;
     if (email) user.email = email;
-    if (dob) user.dob = new Date(dob);
+    if (dateOfBirth) user.dateOfBirth = new Date(dateOfBirth);
     if (password) {
       // Hash the new password before saving
       user.password = await bcrypt.hash(password, 10);
     }
-    if (photo !== undefined) user.photo = photo;
+    if (mood !== undefined) user.mood = mood;
 
     const updatedUser = await user.save();
     res.json({
       message: "User updated successfully",
       data: {
         _id: updatedUser._id,
-        name: updatedUser.name,
+        fullName: updatedUser.fullName,
         email: updatedUser.email,
-        photo: updatedUser.photo,
+        mood: updatedUser.mood,
       },
     });
   } catch (err) {

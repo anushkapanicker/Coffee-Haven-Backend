@@ -5,9 +5,9 @@ const Coffee = require("../models/coffee");
 const Order = require("../models/order");
 
 // Helper function to calculate zodiac sign from date of birth
-const getZodiacSign = (dob) => {
-  const month = dob.getMonth() + 1;
-  const day = dob.getDate();
+const getZodiacSign = (dateOfBirth) => {
+  const month = dateOfBirth.getMonth() + 1;
+  const day = dateOfBirth.getDate();
 
   if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return "Aries";
   if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return "Taurus";
@@ -42,7 +42,7 @@ exports.recommendCoffee = async (req, res) => {
     }
 
     // Get user's zodiac sign
-    const zodiacSign = getZodiacSign(user.dob);
+    const zodiacSign = getZodiacSign(user.dateOfBirth);
 
     // Get user's previous orders with coffee details
     const previousOrders = await Order.find({ user_id: userId })
@@ -55,7 +55,7 @@ exports.recommendCoffee = async (req, res) => {
 
     // Format previous orders for the AI
     const orderHistory = previousOrders.map((order) => ({
-      coffeeName: order.coffee_id.name,
+      coffeeName: order.coffee_id.fullName,
       description: order.coffee_id.description,
       quantity: order.qty,
       date: order.date,
@@ -76,7 +76,7 @@ User information:
 Available coffees in our catalog:
 ${allCoffees
   .map(
-    (coffee) => `- ${coffee.name}: ${coffee.description} (ID: ${coffee._id})`
+    (coffee) => `- ${coffee.fullName}: ${coffee.description} (ID: ${coffee._id})`
   )
   .join("\n")}
 
