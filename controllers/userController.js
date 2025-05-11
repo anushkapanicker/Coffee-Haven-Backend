@@ -1,5 +1,7 @@
 // controllers/userController.js
 const User = require("../models/user");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 // Get all users
 exports.getAllUsers = async (req, res) => {
@@ -28,7 +30,7 @@ exports.getUserById = async (req, res) => {
   }
 };
 
-// Create new user
+// Create new user (Register)
 exports.createUser = async (req, res) => {
   const { name, email, dob, password, photo } = req.body;
 
@@ -36,24 +38,96 @@ exports.createUser = async (req, res) => {
     return res.status(400).json({ message: "Required fields are missing" });
   }
 
-  const user = new User({
-    name,
-    email,
-    dob,
-    password,
-    photo: photo || "",
-    previousOrders: [],
-  });
-
   try {
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email already in use" });
+    }
+
+    // Hash the password
+    // const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = new User({
+      name,
+      email,
+      dob,
+      password: password, // Store hashed password
+      photo: photo || "",
+      previousOrders: [],
+    });
+
     const newUser = await user.save();
-    res
-      .status(201)
-      .json({ message: "User created successfully", data: newUser });
+
+    // Generate token
+    const token = jwt.sign(
+      { userId: newUser._id, email: newUser.email },
+      process.env.JWT_SECRET || "coffee_haven_secret_key",
+      { expiresIn: "24h" }
+    );
+
+    res.status(201).json({
+      message: "User created successfully",
+      data: {
+        user: {
+          _id: newUser._id,
+          name: newUser.name,
+          email: newUser.email,
+          photo: newUser.photo,
+        },
+        token,
+      },
+    });
   } catch (err) {
     res
       .status(400)
       .json({ message: "Error creating user", error: err.message });
+  }
+};
+
+// User login
+exports.loginUser = async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
+  }
+
+  try {
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Compare passwords
+    // const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (password != user.password) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      process.env.JWT_SECRET || "coffee_haven_secret_key",
+      { expiresIn: "24h" }
+    );
+
+    // Return user data and token
+    res.json({
+      message: "Login successful",
+      data: {
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          photo: user.photo,
+        },
+        token,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Login failed", error: err.message });
   }
 };
 
@@ -70,11 +144,22 @@ exports.updateUser = async (req, res) => {
     if (name) user.name = name;
     if (email) user.email = email;
     if (dob) user.dob = new Date(dob);
-    if (password) user.password = password;
+    if (password) {
+      // Hash the new password before saving
+      user.password = await bcrypt.hash(password, 10);
+    }
     if (photo !== undefined) user.photo = photo;
 
     const updatedUser = await user.save();
-    res.json({ message: "User updated successfully", data: updatedUser });
+    res.json({
+      message: "User updated successfully",
+      data: {
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        photo: updatedUser.photo,
+      },
+    });
   } catch (err) {
     res
       .status(400)

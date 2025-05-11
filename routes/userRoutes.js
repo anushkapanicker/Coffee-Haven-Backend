@@ -8,8 +8,11 @@ router.get("/users", userController.getAllUsers);
 // Get user by ID
 router.get("/users/:id", userController.getUserById);
 
-// Create new user
-router.post("/users", userController.createUser);
+// User registration
+router.post("/users/register", userController.createUser);
+
+// User login
+router.post("/users/login", userController.loginUser);
 
 // Update user
 router.patch("/users/:id", userController.updateUser);
